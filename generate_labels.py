@@ -3,11 +3,13 @@ import glob
 import random
 import argparse
 import json
+import pickle
 from shutil import copyfile
 
 from collections import defaultdict
 
 import cv2
+import pandas as pd
 
 class AffWild1:
     name = "affwild1"
@@ -185,9 +187,33 @@ def afewva(output_dir, radius):
                 copyfile(src, dst)
 
 
+AFFECTNET_DIR = "data/affectnet"
+
+AFFECTNET_TRAIN_VA_DIR = "data/affectnet/training.csv"
+AFFECTNET_TRAIN_BORED_VIDEOS = "data/affectnet/train_bored_videos.p"
+
+AFFECTNET_VALID_VA_DIR = "data/affectnet/validation.csv"
+AFFECTNET_VALID_BORED_VIDEOS = "data/affectnet/valid_bored_videos.p"
+
+def affectnet(output_dir, radius, mode):
+    bored_videos = list()
+    output_dir = os.path.join(output_dir, "affectnet", mode)
+    if mode == "train":
+        df_path = AFFECTNET_TRAIN_VA_DIR
+    elif mode == "valid":
+        df_path = AFFECTNET_VALID_VA_DIR
+    else:
+        raise ValueError("Not supported")
+
+    df = pd.read_csv(df_path)
+    for index, row in df.iterrows():
+        if (is_bored(row["valence"], row["arousal"], radius)):
+            bored_videos.append(row["subDirectory_filePath"])
+    pickle.dump(bored_videos, open(AFFECTNET_TRAIN_BORED_VIDEOS, "wb" ))
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Get images and label from dataset.')
-    parser.add_argument('--dataset', type=str, help='affwild1, affwild2, afewva')
+    parser.add_argument('--dataset', type=str, help='affwild1, affwild2, afewva, affectnet')
     parser.add_argument('--output_dir', type=str, default="samples", help='Output dir.')
     parser.add_argument('--radius', type=float, default=0.1, help='Radius in VA to define positive class.')
     parser.add_argument('--mode', type=str, default="train", help='Process training set or validation set.')
@@ -200,5 +226,7 @@ if __name__ == "__main__":
         create_samples(dataset, args.output_dir, args.radius, args.mode)
     elif args.dataset == "afewva":
         afewva(args.output_dir, args.radius)
+    elif args.dataset == "affectnet":
+        affectnet(args.output_dir, args.radius, args.mode)
     else:
         raise ValueError("Dataset not supported.")
