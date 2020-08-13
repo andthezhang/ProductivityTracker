@@ -1,20 +1,41 @@
 import os
 import glob
+import random
+import argparse
+import json
+from shutil import copyfile
+
 from collections import defaultdict
 
 import cv2
 
-DATA_DIR = "data"
-ANNOTATION_TRAIN_DIR = os.path.join(DATA_DIR, "annotations/train")
-AROUSAL_TRAIN_DIR = os.path.join(DATA_DIR, "annotations/train/arousal")
-VALENCE_TRAIN_DIR = os.path.join(DATA_DIR, "annotations/train/valence")
-AROUSAL_TRAIN_FILES = os.path.join(AROUSAL_TRAIN_DIR, "*.txt")
-VALENCE_TRAIN_FILES = os.path.join(VALENCE_TRAIN_DIR, "*.txt")
+class AffWild1:
+    name = "affwild1"
+    DATA_DIR = "data/affwild1"
+    AROUSAL_TRAIN_DIR = os.path.join(DATA_DIR, "annotations/train/arousal")
+    VALENCE_TRAIN_DIR = os.path.join(DATA_DIR, "annotations/train/valence")
+    AROUSAL_TRAIN_FILES = os.path.join(AROUSAL_TRAIN_DIR, "*.txt")
+    VALENCE_TRAIN_FILES = os.path.join(VALENCE_TRAIN_DIR, "*.txt")
 
-BBOXES_TRAIN_DIR = os.path.join(DATA_DIR, "bboxs/train")
-LANDMARKS_TRAIN_DIR = os.path.join(DATA_DIR, "landmarks/train")
-VIDEOS_TRAIN_DIR = os.path.join(DATA_DIR, "videos/train")
-VIDEOS_TEST_DIR = os.path.join(DATA_DIR, "videos/test")
+    BBOXES_TRAIN_DIR = os.path.join(DATA_DIR, "bboxs/train")
+    LANDMARKS_TRAIN_DIR = os.path.join(DATA_DIR, "landmarks/train")
+    VIDEOS_TRAIN_DIR = os.path.join(DATA_DIR, "videos/train")
+    VIDEOS_TEST_DIR = os.path.join(DATA_DIR, "videos/test")
+
+class AffWild2:    
+    name = "affwild2"
+    DATA_DIR = "data/affwild2"
+    ANNOTATION_TRAIN_DIR = os.path.join(DATA_DIR, 
+        "annotations/phoebe/dk15/new_aff_wild/Aff-Wild2_ready/VA_Set/annotations/Train_set")
+    VA_TRAIN_DIR = os.path.join(DATA_DIR, 
+        "annotations/phoebe/dk15/new_aff_wild/Aff-Wild2_ready/VA_Set/annotations/Train_set")
+    VA_TRAIN_FILES = os.path.join(VA_TRAIN_DIR, "*.txt")
+
+
+    BBOXES_TRAIN_DIR = os.path.join(DATA_DIR, "bboxs/train")
+    LANDMARKS_TRAIN_DIR = os.path.join(DATA_DIR, "landmarks/train")
+    VIDEOS_TRAIN_DIR = os.path.join(DATA_DIR, 
+        "Train_Set/phoebe/dk15/new_aff_wild/Aff-Wild2_to_publish_including_test_annotations/VA_Set/videos/Train_Set")
 
 BORED = (-0.34, -0.78)
 DROOPY = (-0.32, -0.96)
@@ -35,55 +56,149 @@ def is_bored(valence: float,
         is_bored = is_bored or with_in_radius
     return is_bored
 
-def get_video_path(video_id: str):
-    mp4_path = os.path.join(VIDEOS_TRAIN_DIR, video_id + ".mp4")
-    avi_path = os.path.join(VIDEOS_TRAIN_DIR, video_id + ".avi")
+def get_video_path(dir: str, video_id: str):
+    mp4_path = os.path.join(dir, video_id + ".mp4")
+    avi_path = os.path.join(dir, video_id + ".avi")
     if os.path.isfile(mp4_path):
         return mp4_path
     if os.path.isfile(avi_path):
         return avi_path
     raise ValueError("Video {} does not exist".format(video_id))
 
-def create_candidates(output_dir="candidates", radius: float=0.1) -> str:
-    candidate_frames = defaultdict(set)
+def create_samples(dataset, output_dir="samples", radius: float=0.1, mode: str="train") -> str:
+    output_dir = os.path.join(output_dir, dataset.name, mode)
+    true_frames = defaultdict(list)
+    false_frames = defaultdict(list)
     total_count = 0
     bored_count = 0
-    for arousal_file, valence_file in zip(sorted(glob.glob(AROUSAL_TRAIN_FILES)), sorted(glob.glob(VALENCE_TRAIN_FILES))):
-        video_id = os.path.splitext(os.path.basename(arousal_file))[0] # eg. file_id = 105
-        arousal_file = open(arousal_file, 'r')
-        valence_file = open(valence_file, 'r')
-        arousal_values = [float(line) for line in arousal_file.readlines()]
-        valence_values = [float(line) for line in valence_file.readlines()]
-        for frame_id, (valence_value, arousal_value) in enumerate(zip(valence_values, arousal_values)):
-            total_count += 1
-            if is_bored(valence_value, arousal_value, radius=radius):
-                bored_count += 1
-                candidate_frames[video_id].add(frame_id)
-
-    # Store bored frames in "bored" directory, non-bored frames in "non-bored" directory.
-    output_dir_bored = os.path.join(output_dir, str(radius), "bored")
-    output_dir_non_bored = os.path.join(output_dir, str(radius), "non_bored")
+    non_bored_count = 0
+    if dataset.name == "affwild1":
+        for arousal_file, valence_file in zip(sorted(glob.glob(dataset.AROUSAL_TRAIN_FILES)), sorted(glob.glob(dataset.VALENCE_TRAIN_FILES))):
+            video_id = os.path.splitext(os.path.basename(arousal_file))[0] # eg. file_id = 105
+            arousal_file = open(arousal_file, 'r')
+            valence_file = open(valence_file, 'r')
+            arousal_values = [float(line) for line in arousal_file.readlines()]
+            valence_values = [float(line) for line in valence_file.readlines()]
+            for frame_id, (valence_value, arousal_value) in enumerate(zip(valence_values, arousal_values)):
+                total_count += 1
+                if is_bored(valence_value, arousal_value, radius=radius):
+                    bored_count += 1
+                    true_frames[video_id].append(frame_id)
+                else:
+                    false_frames[video_id].append(frame_id)
+    if dataset.name == "affwild2":
+        for va_file in sorted(glob.glob(dataset.VA_TRAIN_FILES)):
+            video_id = os.path.splitext(os.path.basename(va_file))[0]
+            va_file = open(va_file, 'r')
+            next(va_file) # Skip first line
+            arousal_values = []
+            valence_values = []
+            for line in va_file.readlines():
+                line_content = line.split(',')
+                valence_values.append(float(line_content[0]))
+                arousal_values.append(float(line_content[1]))
+            for frame_id, (valence_value, arousal_value) in enumerate(zip(valence_values, arousal_values)):
+                total_count += 1
+                if is_bored(valence_value, arousal_value, radius=radius):
+                    bored_count += 1
+                    true_frames[video_id].append(frame_id)
+                else:
+                    false_frames[video_id].append(frame_id)
+    # Store true frames in "true" directory, non-true frames in "non-true" directory.
+    output_dir_true = os.path.join(output_dir, str(radius), "true")
+    output_dir_false = os.path.join(output_dir, str(radius), "false")
     os.makedirs(output_dir, exist_ok=True)
-    os.makedirs(output_dir_bored, exist_ok=True)
-    os.makedirs(output_dir_non_bored, exist_ok=True)
-
-    for video_id, candidate_frames in candidate_frames.items():
-        video_file = get_video_path(video_id)
+    os.makedirs(output_dir_true, exist_ok=True)
+    os.makedirs(output_dir_false, exist_ok=True)
+    
+    for video_id, video_true_frames in true_frames.items():
+        video_false_frames = false_frames[video_id]
+        num_samples = min(10, len(video_true_frames))
+        
+        true_frames_sample = random.choices(list(video_true_frames), k=num_samples)
+        false_frames_sample = random.choices(list(video_false_frames), k=num_samples/2)
+        try:
+            video_file = get_video_path(dataset.VIDEOS_TRAIN_DIR, video_id)
+        except ValueError as ve:
+            # video_file = get_video_path(dataset.VIDEOS_TEST_DIR, video_id)
+            print(ve)
+            continue
         video_obj = cv2.VideoCapture(video_file)
         frame_id = 0
         success = True
         while success:
             success, frame = video_obj.read()
             if success:
-                if frame_id in candidate_frames:
-                    cv2.imwrite(os.path.join(output_dir_bored, "{}_{}.jpg".format(video_id, frame_id)),
+                if frame_id in true_frames_sample:
+                    cv2.imwrite(os.path.join(output_dir_true, "{}_{}.jpg".format(video_id, frame_id)),
                                 frame)
-                else:
-                    cv2.imwrite(os.path.join(output_dir_non_bored, "{}_{}.jpg".format(video_id, frame_id)),
+                if frame_id in false_frames_sample:
+                    cv2.imwrite(os.path.join(output_dir_false, "{}_{}.jpg".format(video_id, frame_id)),
                                 frame)
             frame_id += 1
 
-    return candidate_frames, bored_count, total_count
-    
+def afewva(output_dir, radius):
+    DATA_DIR = "data/AFEW-VA/AFEW-VA"
+    output_dir_true = os.path.join(output_dir, "afewva/" + str(radius) + "/true")
+    output_dir_false = os.path.join(output_dir, "afewva/"+ str(radius) + "/false")
+    os.makedirs(output_dir_true, exist_ok=True)
+    os.makedirs(output_dir_false, exist_ok=True)
+    for video_id in os.listdir(DATA_DIR):
+        video_dir = os.path.join(DATA_DIR, video_id)
+        if not os.path.isdir(video_dir): break
+        f = open(os.path.join(video_dir, video_id + ".json"), "r")
+        j = json.load(f)
+        true_frames = list()
+        false_frames = list()
+        for frame_id, frame_meta in j["frames"].items():
+            arousal_val = frame_meta["arousal"] / 10.0
+            valence_val = frame_meta["valence"] / 10.0
+            if is_bored(valence_val, arousal_val, radius):
+                true_frames.append(
+                    (
+                    os.path.join(video_dir, frame_id + ".png"),
+                    os.path.join(output_dir_true, video_id + "_" + frame_id + ".png")
+                    )
+                )
+            else:
+                false_frames.append(
+                    (
+                    os.path.join(video_dir, frame_id + ".png"),
+                    os.path.join(output_dir_false, video_id + "_" + frame_id + ".png")
+                    )
+                )
+        print("======")
+        print(video_id)
+        print(len(true_frames))
+        print(len(false_frames))
+        if len(true_frames) > 0:
+            true_frames_sample = list()
+            false_frames_sample = list()
+            num_samples = min(10, len(true_frames))
+            if num_samples <= len(true_frames):
+                true_frames_sample = random.choices(true_frames, k=num_samples)
+            if num_samples <= len(false_frames):
+                false_frames_sample = random.choices(false_frames, k=num_samples)
+            for src, dst in true_frames_sample:
+                copyfile(src, dst)
+            for src, dst in false_frames_sample:
+                copyfile(src, dst)
+
+
 if __name__ == "__main__":
-    candidate_frames, bored_count, total_count = create_candidates()
+    parser = argparse.ArgumentParser(description='Get images and label from dataset.')
+    parser.add_argument('--dataset', type=str, help='affwild1, affwild2, afewva')
+    parser.add_argument('--output_dir', type=str, default="samples", help='Output dir.')
+    parser.add_argument('--radius', type=float, default=0.1, help='Radius in VA to define positive class.')
+    parser.add_argument('--mode', type=str, default="train", help='Process training set or validation set.')
+    args = parser.parse_args()
+    if args.dataset == "affwild1":
+        dataset = AffWild1()
+        create_samples(dataset, args.output_dir, args.radius, args.mode)
+    elif args.dataset == "affwild2":
+        dataset = AffWild2()
+        create_samples(dataset, args.output_dir, args.radius, args.mode)
+    elif args.dataset == "afewva":
+        afewva(args.output_dir, args.radius)
+    else:
+        raise ValueError("Dataset not supported.")
