@@ -1,15 +1,11 @@
 import * as tf from '@tensorflow/tfjs';
 
-async function extractPoseFeature(image, poseNet, scoreThreshold=0.6, verbose=true){
-    console.log("extractPoseFeature")
-    console.log(image)
-    console.log(image.shape)
+async function extractPoseFeature(image, poseNet, scoreThreshold=0.6, verbose=false){
     const upperPoseCount = 11;
     const maxDistance = Math.pow((image.shape[0]), 2) + Math.pow((image.shape[1]), 2);
     const pose = await poseNet.estimateSinglePose(image, {
       flipHorizontal: true
     });
-    console.log(pose)
     let upperPose = pose.keypoints.slice(0, upperPoseCount) // only getting coordindate of upper body.
     let distanceKernel = new Array(upperPoseCount);
     let cosineKernel = new Array(upperPoseCount);
@@ -35,7 +31,6 @@ async function extractPoseFeature(image, poseNet, scoreThreshold=0.6, verbose=tr
           }
       }
     }
-    console.log(distanceKernel)
     const distanceKernelTensor = tf.tensor(distanceKernel);
     const cosineKernelTensor = tf.tensor(cosineKernel);
   
@@ -45,6 +40,9 @@ async function extractPoseFeature(image, poseNet, scoreThreshold=0.6, verbose=tr
     if (verbose){
       console.log("extractPoseFeature=======")
       console.log(returnTensor.shape)
+      // distanceKernelTensor.print();
+      // cosineKernelTensor.print();
+      // returnTensor.print()
     }
   
     return returnTensor;
@@ -63,8 +61,7 @@ async function loadTruncatedMobileNet() {
 // Extract facial feature. First run bazelface to crop face, 
 // then pass cropped face area to MobileNet to extract feature.
 // bazelface: https://github.com/tensorflow/tfjs-models/tree/master/blazeface
-async function extractFaceFeature(image, blazefaceModel, truncatedMobileNet, verbose=true){
-    console.log(image)
+async function extractFaceFeature(image, blazefaceModel, truncatedMobileNet, verbose=false){
     // Extract image embedding from MobileNet.
     // const blazefaceModel = await blazeface.load();
     const blazefacePredictions = await blazefaceModel.estimateFaces(image, {returnTensors: true});
@@ -83,11 +80,17 @@ async function extractFaceFeature(image, blazefaceModel, truncatedMobileNet, ver
 }
 
 async function loadCustomModel(){
-    const model = await tf.loadGraphModel('http://localhost:8080/tfjs/model.json');
-    return model;
+  const model = await tf.loadGraphModel('http://localhost:8080/no_pose_model_tfjs/model.json');
+  return model;
+}
+async function extractFeature(image, truncatedMobileNet, verbose=true){
+  const resizeImage = tf.image.resizeBilinear(image.expandDims(0), [224, 224]);
+  const xs = await truncatedMobileNet.predict(resizeImage);
+  return xs;
 }
 
 exports.extractFaceFeature = extractFaceFeature;
-exports.extractPoseFeature = extractPoseFeature;
+// exports.extractPoseFeature = extractPoseFeature;
 exports.loadTruncatedMobileNet = loadTruncatedMobileNet;
 exports.loadCustomModel = loadCustomModel;
+exports.extractFeature = extractFeature;

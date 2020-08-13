@@ -9,9 +9,15 @@
 data/
 candidates/
 samples/
+
 *node_modules/
 *build
 *npm-debug.log
 .env
 .DS_Store
 *package-lock.json
+*.cache/
+*dist/
+*yarn.lock
+
+*.npy

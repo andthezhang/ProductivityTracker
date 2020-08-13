@@ -16,12 +16,12 @@
  */
 
 import * as blazeface from '@tensorflow-models/blazeface';
-// import * as tf from '@tensorflow/tfjs-core';
 import * as tf from '@tensorflow/tfjs';
 import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm';
-import * as posenet from  '@tensorflow-models/posenet';
+import {displayPrediction} from './ui'
+// import * as posenet from  '@tensorflow-models/posenet';
 
-import {extractFaceFeature, extractPoseFeature, loadTruncatedMobileNet, loadCustomModel} from './model';
+import {extractFaceFeature, extractFeature, loadTruncatedMobileNet, loadCustomModel} from './model';
 
 tfjsWasm.setWasmPath('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@^2.1.0/dist/tfjs-backend-wasm.wasm');
 
@@ -29,11 +29,11 @@ const stats = new Stats();
 stats.showPanel(0);
 document.body.prepend(stats.domElement);
 
-let model, blazefaceModel, truncatedMobileNet, poseNet;
+let model, blazefaceModel, truncatedMobileNet;
 let ctx, videoWidth, videoHeight, video, canvas;
 
 const state = {
-  backend: 'cpu'
+  backend: 'wasm'
 };
 
 const gui = new dat.GUI();
@@ -65,14 +65,11 @@ const renderPrediction = async () => {
   const annotateBoxes = true;
   const predictions = await blazefaceModel.estimateFaces(
     video, returnTensors, flipHorizontal, annotateBoxes);
-  console.log("extractFaceFeature")
   const faceFeature = await extractFaceFeature(tf.browser.fromPixels(video), blazefaceModel, truncatedMobileNet);
-  console.log("extractPoseFeature")
-  const poseFeature = await extractPoseFeature(tf.browser.fromPixels(video), poseNet);
-  console.log("predicting..")
-  const boredPredictions = await model.predict([faceFeature, poseFeature])
-  console.log("boredPredictions")
-  console.log(boredPredictions)
+  const feature = await extractFeature(tf.browser.fromPixels(video), truncatedMobileNet);
+  // TODO no face.
+  const boredPredictions = await model.predict([faceFeature, feature]);
+  displayPrediction(boredPredictions)
 
   if (predictions.length > 0) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -111,7 +108,6 @@ const renderPrediction = async () => {
 };
 
 const setupPage = async () => {
-  await tf.setBackend(state.backend);
   await setupCamera();
   video.play();
 
@@ -128,10 +124,10 @@ const setupPage = async () => {
 
   // Load models.
   blazefaceModel = await blazeface.load();
-  poseNet = await posenet.load({
-    architecture: 'MobileNetV1',
-    quantBytes: 1
-  });
+  // poseNet = await posenet.load({
+  //   architecture: 'MobileNetV1',
+  //   quantBytes: 1
+  // });
   truncatedMobileNet = await loadTruncatedMobileNet();
   model = await loadCustomModel();
 
