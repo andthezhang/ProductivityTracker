@@ -190,26 +190,54 @@ def afewva(output_dir, radius):
 AFFECTNET_DIR = "data/affectnet"
 
 AFFECTNET_TRAIN_VA_DIR = "data/affectnet/training.csv"
-AFFECTNET_TRAIN_BORED_VIDEOS = "data/affectnet/train_bored_videos.p"
+AFFECTNET_TRAIN_TRUE_VIDEOS = "data/affectnet/train_true_videos.p"
+AFFECTNET_TRAIN_FALSE_VIDEOS = "data/affectnet/train_false_videos.p"
 
 AFFECTNET_VALID_VA_DIR = "data/affectnet/validation.csv"
-AFFECTNET_VALID_BORED_VIDEOS = "data/affectnet/valid_bored_videos.p"
+AFFECTNET_VALID_TRUE_VIDEOS = "data/affectnet/valid_true_videos.p"
+AFFECTNET_VALID_FALSE_VIDEOS = "data/affectnet/valid_false_videos.p"
 
 def affectnet(output_dir, radius, mode):
-    bored_videos = list()
+    true_videos = list()
+    false_videos =list()
+    output_dir_true = os.path.join(output_dir, "affectnet", mode, str(radius), "true")
+    output_dir_false = os.path.join(output_dir, "affectnet", mode, str(radius),"false")
+    os.makedirs(output_dir_true, exist_ok=True)
+    os.makedirs(output_dir_false, exist_ok=True)
     output_dir = os.path.join(output_dir, "affectnet", mode)
     if mode == "train":
         df_path = AFFECTNET_TRAIN_VA_DIR
+        true_pickle_dir = AFFECTNET_TRAIN_TRUE_VIDEOS
+        false_pickle_dir = AFFECTNET_TRAIN_FALSE_VIDEOS
     elif mode == "valid":
         df_path = AFFECTNET_VALID_VA_DIR
+        true_pickle_dir = AFFECTNET_VALID_TRUE_VIDEOS
+        false_pickle_dir = AFFECTNET_VALID_FALSE_VIDEOS
     else:
         raise ValueError("Not supported")
 
     df = pd.read_csv(df_path)
     for index, row in df.iterrows():
         if (is_bored(row["valence"], row["arousal"], radius)):
-            bored_videos.append(row["subDirectory_filePath"])
-    pickle.dump(bored_videos, open(AFFECTNET_TRAIN_BORED_VIDEOS, "wb" ))
+            true_videos.append(row["subDirectory_filePath"])
+        else:
+            false_videos.append(row["subDirectory_filePath"])
+    print(len(true_videos))
+    print(len(false_videos))
+    pickle.dump(true_videos, open(true_pickle_dir, "wb" ))
+    pickle.dump(false_videos, open(false_pickle_dir, "wb" ))
+    
+    AFFECTNET_DIR = "/Volumes/Samsung_T5/OneDrive-2020-08-13/Manually_Annotated_Images"
+    for true_image_path in true_videos:
+        src = os.path.join(AFFECTNET_DIR, true_image_path)
+        dst = os.path.join(output_dir_true, os.path.basename(true_image_path))
+        copyfile(src, dst)
+    
+    false_videos = random.choices(false_videos, k=len(true_videos))
+    for false_image_path in false_videos:
+        src = os.path.join(AFFECTNET_DIR, false_image_path)
+        dst = os.path.join(output_dir_false, os.path.basename(false_image_path))
+        copyfile(src, dst)
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Get images and label from dataset.')

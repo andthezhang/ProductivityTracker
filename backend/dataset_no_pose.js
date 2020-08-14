@@ -39,6 +39,7 @@ class ControllerDataset {
         const labelDir = path.join(directory, label);
         let image_paths = glob.sync(labelDir + "/*.jpg")
         image_paths = image_paths.concat(glob.sync(labelDir + "/*.png"))
+        image_paths = image_paths.concat(glob.sync(labelDir + "/*.JPG"))
         for (let i = 0; i < image_paths.length; i ++){
             let image_path = image_paths[i];
             console.log(image_path);
@@ -155,6 +156,7 @@ const labels = ["true", "false"];
     await trainDataset.addDir("../samples/afewva/0.5", labels, truncatedMobileNet, blazefaceModel);
     await trainDataset.addDir("../samples/affwild1/train/0.1", labels, truncatedMobileNet, blazefaceModel);
     await trainDataset.addDir("../samples/affwild2/train/0.1", labels, truncatedMobileNet, blazefaceModel);
+    await trainDataset.addDir("../samples/affectnet/train/0.1", labels, truncatedMobileNet, blazefaceModel);
     saveNpy(trainDataset.xsFace, "./saved_data/no_pose/xs_face_no_pose.npy");
     saveNpy(trainDataset.xs, "./saved_data/no_pose/xs_no_pose.npy");
     saveNpy(trainDataset.ys, "./saved_data/no_pose/ys_no_pose.npy");

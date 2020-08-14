@@ -80,7 +80,7 @@ async function extractFaceFeature(image, blazefaceModel, truncatedMobileNet, ver
 }
 
 async function loadCustomModel(){
-  const model = await tf.loadGraphModel('http://localhost:8080/no_pose_model_tfjs/model.json');
+  const model = await tf.loadGraphModel('http://localhost:8080/no_pose_affectnet_model_tfjs/model.json');
   return model;
 }
 async function extractFeature(image, truncatedMobileNet, verbose=true){
