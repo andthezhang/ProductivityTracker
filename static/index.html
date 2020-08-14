@@ -1,0 +1,65 @@
+<html>
+<style>
+  body {
+    margin: 25px;
+  }
+
+  #main {
+    display: flex;
+  }
+  #video_content {
+    position: relative;
+    width: 75%;
+    margin: 50px 0;
+  }
+  #chartContainer{
+    width:25%;
+  }
+
+  canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  #description {
+    width: 600px;
+  }
+</style>
+
+<body>
+  <div id="main">
+    <div id="description">
+      <h1 id="description-title">Productivity Tracker</h1>
+    </div>
+    <div id="video_content">
+      <video id="video" playsinline style="
+        -webkit-transform: scaleX(-1);
+        transform: scaleX(-1);
+        width: auto;
+        height: auto;
+        ">
+      </video>
+      <canvas id="output"></canvas>
+      <video id="video" playsinline style="
+        -webkit-transform: scaleX(-1);
+        transform: scaleX(-1);
+        visibility: hidden;
+        width: auto;
+        height: auto;
+        ">
+      </video>
+    </div>
+    <div id="chartContainer" style="height: 370px; width: 300px;">
+      <h1 id="boredProb">Application Loading... </h1>
+    </div>
+  </div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm/dist/tf-backend-wasm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+<script src="index.js"></script>
+</html>
