@@ -1,12 +1,12 @@
+/**
+ * NodeJS script to generate npy files for dataset.
+ */
 const glob = require( 'glob' )
 const fs = require('fs');
 const path = require('path');
 const tf = require('@tensorflow/tfjs-node');
 const blazeface = require('@tensorflow-models/blazeface');
 const { parse, serialize } = require('tfjs-npy');
-
-// const {faceNetConfig, extractFaceFeature} = require('./model/facenet')
-// const {poseNetConfig, extractPoseFeature} = require('./model/posenet')
 
 
 //This class is adapted from https://github.com/tensorflow/tfjs-examples/blob/master/webcam-transfer-learning/controller_dataset.js
@@ -33,7 +33,6 @@ class ControllerDataset {
     * @param {Array} labels Array of labels in string.
     */
   async addDir(directory, labels, truncatedMobileNet, blazefaceModel) {
-    console.log("addDir start");
     for (let labelIndex = 0; labelIndex < labels.length; labelIndex ++){
         let label = labels[labelIndex];
         const labelDir = path.join(directory, label);
@@ -80,19 +79,14 @@ class ControllerDataset {
             }
         }
     };
-    console.log("addDir end")
     };
 
-    async loadFromNpy(
-        xsFaceNpy="./saved_data/train_face.npy", 
-        xsPoseNpy="./saved_data/train_pose.npy", 
-        ysNpy="./saved_data/train_y_float32.npy") {
-        [this.xsFace, this.xsPose, this.ys] = await Promise.allSettled(
-            [loadNpy(xsFaceNpy), loadNpy(xsPoseNpy), loadNpy(ysNpy)]);
+    async loadFromNpy(xsFaceNpy, xsNpy, ysNpy) {
+        [this.xsFace, this.xs, this.ys] = await Promise.allSettled(
+            [loadNpy(xsFaceNpy), loadNpy(xsNpy), loadNpy(ysNpy)]);
         this.xsFace = this.xsFace.value.clone();
-        this.xsPose = this.xsPose.value.clone();
+        this.xs = this.xs.value.clone();
         this.ys = this.ys.value.clone();
-        console.log(this.xsFace);
     }
 };
 // mobilenet: https://github.com/tensorflow/tfjs-models/tree/master/mobilenet
@@ -120,7 +114,6 @@ async function extractFaceFeature(image, blazefaceModel, truncatedMobileNet, ver
     const boxes = blazefacePredictions[0].topLeft.concat(blazefacePredictions[0].bottomRight);
     const croppedFace = tf.image.cropAndResize(image.expandDims(0), boxes.expandDims(0), [0], [224, 224]);
     const embeddings = truncatedMobileNet.predict(croppedFace);
-    console.log("2")
     if (verbose){
       console.log("extractFaceFeature=======")
       console.log(embeddings.shape)
@@ -143,9 +136,6 @@ async function loadNpy(fn){
     return await parse(ab);
 }
 
-exports.ControllerDataset = ControllerDataset;
-exports.loadNpy = loadNpy;
-
 const labels = ["true", "false"];
 
 
@@ -157,7 +147,7 @@ const labels = ["true", "false"];
     await trainDataset.addDir("../samples/affwild1/train/0.1", labels, truncatedMobileNet, blazefaceModel);
     await trainDataset.addDir("../samples/affwild2/train/0.1", labels, truncatedMobileNet, blazefaceModel);
     await trainDataset.addDir("../samples/affectnet/train/0.1", labels, truncatedMobileNet, blazefaceModel);
-    saveNpy(trainDataset.xsFace, "./saved_data/no_pose/xs_face_no_pose.npy");
-    saveNpy(trainDataset.xs, "./saved_data/no_pose/xs_no_pose.npy");
-    saveNpy(trainDataset.ys, "./saved_data/no_pose/ys_no_pose.npy");
+    saveNpy(trainDataset.xsFace, "./saved_data/xs_face_no_pose.npy");
+    saveNpy(trainDataset.xs, "./saved_data/xs_no_pose.npy");
+    saveNpy(trainDataset.ys, "./saved_data/ys_no_pose.npy");
   })();
