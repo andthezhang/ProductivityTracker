@@ -22,3 +22,4 @@ samples/
 
 *.npy
 *saved_models/
+*saved_npy/

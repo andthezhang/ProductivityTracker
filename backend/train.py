@@ -5,9 +5,9 @@ from keras.layers.normalization import BatchNormalization
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 
-xs_face = np.load("saved_data/no_pose/xs_face_no_pose.npy")
-xs = np.load("saved_data/no_pose/xs_no_pose.npy")
-ys = np.load("saved_data/no_pose/ys_no_pose.npy")
+xs_face = np.load("saved_npy/xs_face_no_pose.npy")
+xs = np.load("saved_npy/xs_no_pose.npy")
+ys = np.load("saved_npy/ys_no_pose.npy")
 
 xs_face_train, xs_face_test, xs_train, xs_test, ys_train, ys_test  = train_test_split(xs_face, xs, ys, test_size=0.2, random_state=42)
 # Face.
@@ -62,4 +62,4 @@ plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'test'], loc='upper left')
 plt.show()
-model.save("./saved_models/no_pose_affectnet_model")
+model.save("./saved_models/model")
