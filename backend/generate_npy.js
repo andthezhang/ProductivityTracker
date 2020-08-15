@@ -136,17 +136,18 @@ async function loadNpy(fn){
     return await parse(ab);
 }
 
-const labels = ["true", "false"];
+const labels = ["false", "true"];
 
 
 (async () => {
     const truncatedMobileNet = await loadTruncatedMobileNet();
     const blazefaceModel = await blazeface.load();
     let trainDataset = new ControllerDataset(labels);
-    await trainDataset.addDir("../samples/afewva/0.5", labels, truncatedMobileNet, blazefaceModel);
+    // await trainDataset.addDir("../samples/afewva/0.5", labels, truncatedMobileNet, blazefaceModel);
     await trainDataset.addDir("../samples/affwild1/train/0.1", labels, truncatedMobileNet, blazefaceModel);
     await trainDataset.addDir("../samples/affwild2/train/0.1", labels, truncatedMobileNet, blazefaceModel);
     await trainDataset.addDir("../samples/affectnet/train/0.1", labels, truncatedMobileNet, blazefaceModel);
+    await trainDataset.addDir("../samples/affectnet/valid/0.1", labels, truncatedMobileNet, blazefaceModel);
     saveNpy(trainDataset.xsFace, "./saved_data/xs_face_no_pose.npy");
     saveNpy(trainDataset.xs, "./saved_data/xs_no_pose.npy");
     saveNpy(trainDataset.ys, "./saved_data/ys_no_pose.npy");

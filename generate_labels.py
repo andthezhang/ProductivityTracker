@@ -139,53 +139,6 @@ def create_samples(dataset, output_dir="samples", radius: float=0.1, mode: str="
                                 frame)
             frame_id += 1
 
-def afewva(output_dir, radius):
-    DATA_DIR = "data/AFEW-VA/AFEW-VA"
-    output_dir_true = os.path.join(output_dir, "afewva/" + str(radius) + "/true")
-    output_dir_false = os.path.join(output_dir, "afewva/"+ str(radius) + "/false")
-    os.makedirs(output_dir_true, exist_ok=True)
-    os.makedirs(output_dir_false, exist_ok=True)
-    for video_id in os.listdir(DATA_DIR):
-        video_dir = os.path.join(DATA_DIR, video_id)
-        if not os.path.isdir(video_dir): break
-        f = open(os.path.join(video_dir, video_id + ".json"), "r")
-        j = json.load(f)
-        true_frames = list()
-        false_frames = list()
-        for frame_id, frame_meta in j["frames"].items():
-            arousal_val = frame_meta["arousal"] / 10.0
-            valence_val = frame_meta["valence"] / 10.0
-            if is_bored(valence_val, arousal_val, radius):
-                true_frames.append(
-                    (
-                    os.path.join(video_dir, frame_id + ".png"),
-                    os.path.join(output_dir_true, video_id + "_" + frame_id + ".png")
-                    )
-                )
-            else:
-                false_frames.append(
-                    (
-                    os.path.join(video_dir, frame_id + ".png"),
-                    os.path.join(output_dir_false, video_id + "_" + frame_id + ".png")
-                    )
-                )
-        print("======")
-        print(video_id)
-        print(len(true_frames))
-        print(len(false_frames))
-        if len(true_frames) > 0:
-            true_frames_sample = list()
-            false_frames_sample = list()
-            num_samples = min(10, len(true_frames))
-            if num_samples <= len(true_frames):
-                true_frames_sample = random.choices(true_frames, k=num_samples)
-            if num_samples <= len(false_frames):
-                false_frames_sample = random.choices(false_frames, k=num_samples)
-            for src, dst in true_frames_sample:
-                copyfile(src, dst)
-            for src, dst in false_frames_sample:
-                copyfile(src, dst)
-
 
 AFFECTNET_DIR = "data/affectnet"
 
@@ -241,7 +194,7 @@ def affectnet(output_dir, radius, mode):
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Get images and label from dataset.')
-    parser.add_argument('--dataset', type=str, help='affwild1, affwild2, afewva, affectnet')
+    parser.add_argument('--dataset', type=str, help='affwild1, affwild2, affectnet')
     parser.add_argument('--output_dir', type=str, default="samples", help='Output dir.')
     parser.add_argument('--radius', type=float, default=0.1, help='Radius in VA to define positive class.')
     parser.add_argument('--mode', type=str, default="train", help='Process training set or validation set.')
@@ -252,8 +205,6 @@ if __name__ == "__main__":
     elif args.dataset == "affwild2":
         dataset = AffWild2()
         create_samples(dataset, args.output_dir, args.radius, args.mode)
-    elif args.dataset == "afewva":
-        afewva(args.output_dir, args.radius)
     elif args.dataset == "affectnet":
         affectnet(args.output_dir, args.radius, args.mode)
     else:
