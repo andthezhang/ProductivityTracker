@@ -2,8 +2,6 @@
 
 [Productivity Tracker](https://storage.googleapis.com/productivemodel/index.html) is a simple website to help you stay productive in front of a computer. It utilizes machine learning to make real-time productivity level prediction based on web cam input. 
 
-[toc]
-
 ## Getting Started
 
 ### Prerequisites
@@ -47,3 +45,11 @@ Convert to tfjs model:
 ### Static Website
 
 Static Website is located at `static_website`, deployed in [Productivity Tracker](https://storage.googleapis.com/productivemodel/index.html).
+
+
+
+## Authors
+
+[Zhiheng (Andy) Zhang](https://www.linkedin.com/in/andyzzh/)
+
+Nashila Jahan
