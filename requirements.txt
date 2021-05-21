@@ -2,5 +2,5 @@ numpy
 opencv-python==4.3.0.36
 jupyterlab
 Keras==2.4.3
-tensorflow==2.3.0
+tensorflow==2.5.0
 pandas==1.0.5
